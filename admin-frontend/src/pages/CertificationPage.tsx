@@ -1,27 +1,22 @@
 import { Table, Button, Image, Space, Tag, Modal } from 'antd';
-import { useState } from 'react';
-
-const mockCerts = [
-  {
-    id: 1,
-    user: '홍길동',
-    mission: '아침 6시 기상',
-    submittedAt: '2025-05-04 06:15',
-    imageUrl: 'https://placekitten.com/200/200',
-    status: '대기',
-  },
-  {
-    id: 2,
-    user: '김영희',
-    mission: '하루 만보 걷기',
-    submittedAt: '2025-05-04 22:11',
-    imageUrl: 'https://placekitten.com/201/201',
-    status: '승인됨',
-  },
-];
+import { useEffect, useState } from 'react';
+import { fetchCertifications, Certification } from '@/services/certificationService';
 
 const CertificationPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [certs, setCerts] = useState<Certification[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchCertifications();
+        setCerts(data);
+      } catch (e) {
+        console.error('인증 데이터 로드 실패:', e);
+      }
+    };
+    load();
+  }, []);
 
   const handleApprove = (id: number) => {
     console.log(`인증 ${id} 승인`);
@@ -63,7 +58,7 @@ const CertificationPage = () => {
     {
       title: '조치',
       key: 'actions',
-      render: (_: any, record: any) =>
+      render: (_: any, record: Certification) =>
         record.status === '대기' && (
           <Space>
             <Button type="primary" size="small" onClick={() => handleApprove(record.id)}>
@@ -80,7 +75,7 @@ const CertificationPage = () => {
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>인증 관리</h1>
-      <Table dataSource={mockCerts} columns={columns} rowKey="id" />
+      <Table dataSource={certs} columns={columns} rowKey="id" />
 
       <Modal
         open={!!previewUrl}

@@ -1,21 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Table, Tag, Button, Space } from 'antd';
-
-const mockAdmins = [
-  {
-    id: 1,
-    name: '관리자1',
-    email: 'admin1@ilhang.com',
-    role: '최고 관리자',
-  },
-  {
-    id: 2,
-    name: '운영자2',
-    email: 'admin2@ilhang.com',
-    role: '일반 운영자',
-  },
-];
+import { fetchAdmins, Admin } from '@/services/adminService';
 
 const AdminPage = () => {
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchAdmins();
+        setAdmins(data);
+      } catch (e) {
+        console.error('운영자 목록 불러오기 실패:', e);
+      }
+    };
+    load();
+  }, []);
+
   const handleRemove = (id: number) => {
     console.log(`운영자 ${id} 삭제`);
   };
@@ -39,7 +40,7 @@ const AdminPage = () => {
     {
       title: '조치',
       key: 'actions',
-      render: (_: any, record: any) =>
+      render: (_: any, record: Admin) =>
         record.role !== '최고 관리자' && (
           <Button danger size="small" onClick={() => handleRemove(record.id)}>
             삭제
@@ -56,7 +57,7 @@ const AdminPage = () => {
           계정 등록
         </Button>
       </div>
-      <Table dataSource={mockAdmins} columns={columns} rowKey="id" />
+      <Table dataSource={admins} columns={columns} rowKey="id" />
     </div>
   );
 };

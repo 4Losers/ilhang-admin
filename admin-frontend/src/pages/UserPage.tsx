@@ -1,23 +1,26 @@
-import { Table, Tag, Button, Space } from 'antd';
-
-const mockUsers = [
-  {
-    id: 1,
-    nickname: '홍길동',
-    email: 'hong@test.com',
-    joinedAt: '2025-01-15',
-    status: '정상',
-  },
-  {
-    id: 2,
-    nickname: '김영희',
-    email: 'kim@test.com',
-    joinedAt: '2025-03-10',
-    status: '정지됨',
-  },
-];
+import { useEffect, useState } from 'react';
+import { Table, Tag, Button, Space, Spin } from 'antd';
+import { fetchUsers, User } from '@/services/userService';
 
 const UserPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await fetchUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error('유저 불러오기 실패:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
   const handleBlock = (id: number) => {
     console.log(`유저 ${id} 정지 처리`);
   };
@@ -46,19 +49,13 @@ const UserPage = () => {
     {
       title: '조치',
       key: 'actions',
-      render: (_: any, record: any) => (
+      render: (_: any, record: User) => (
         <Space>
-          <Button size="small" onClick={() => handleView(record.id)}>
-            상세
-          </Button>
+          <Button size="small" onClick={() => handleView(record.id)}>상세</Button>
           {record.status === '정상' ? (
-            <Button danger size="small" onClick={() => handleBlock(record.id)}>
-              정지
-            </Button>
+            <Button danger size="small" onClick={() => handleBlock(record.id)}>정지</Button>
           ) : (
-            <Button type="primary" size="small" onClick={() => handleUnblock(record.id)}>
-              해제
-            </Button>
+            <Button type="primary" size="small" onClick={() => handleUnblock(record.id)}>해제</Button>
           )}
         </Space>
       ),
@@ -68,7 +65,7 @@ const UserPage = () => {
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>유저 관리</h1>
-      <Table dataSource={mockUsers} columns={columns} rowKey="id" />
+      {loading ? <Spin /> : <Table dataSource={users} columns={columns} rowKey="id" />}
     </div>
   );
 };

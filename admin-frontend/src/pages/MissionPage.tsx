@@ -1,47 +1,47 @@
+import { useEffect, useState } from 'react';
 import { Table, Tag, Button, Space } from 'antd';
+import { fetchMatchings, Matching } from '@/services/matchingService';
 
-const mockMissions = [
-  {
-    id: 1,
-    groupName: '출근 전 30분 독서',
-    challengePoint: 1000,
-    period: '매일',
-    status: '활성',
-  },
-  {
-    id: 2,
-    groupName: '하루 만보 걷기',
-    challengePoint: 500,
-    period: '매주',
-    status: '비활성',
-  },
-];
+const MatchingPage = () => {
+  const [matchings, setMatchings] = useState<Matching[]>([]);
 
-const MissionPage = () => {
-  const handleEdit = (id: number) => {
-    console.log(`미션 ${id} 수정`);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchMatchings();
+        setMatchings(data);
+      } catch (e) {
+        console.error('매칭 불러오기 실패:', e);
+      }
+    };
+    load();
+  }, []);
+
+  const handleViewTeams = (id: number) => {
+    console.log(`매칭 ${id}의 팀 구성 보기`);
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: '미션명', dataIndex: 'groupName', key: 'groupName' },
-    { title: '도전금', dataIndex: 'challengePoint', key: 'challengePoint' },
-    { title: '주기', dataIndex: 'period', key: 'period' },
+    { title: '회차 ID', dataIndex: 'id', key: 'id' },
+    { title: '매칭 주기', dataIndex: 'cycleName', key: 'cycleName' },
+    { title: '시작일', dataIndex: 'matchStart', key: 'matchStart' },
+    { title: '종료일', dataIndex: 'matchEnd', key: 'matchEnd' },
     {
       title: '상태',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={status === '활성' ? 'green' : 'red'}>{status}</Tag>
-      ),
+      render: (status: string) => {
+        const color = status === '진행중' ? 'green' : status === '종료' ? 'gray' : 'orange';
+        return <Tag color={color}>{status}</Tag>;
+      },
     },
     {
       title: '조치',
       key: 'actions',
-      render: (_: any, record: any) => (
+      render: (_: any, record: Matching) => (
         <Space>
-          <Button size="small" onClick={() => handleEdit(record.id)}>
-            수정
+          <Button size="small" onClick={() => handleViewTeams(record.id)}>
+            팀 구성 보기
           </Button>
         </Space>
       ),
@@ -50,13 +50,10 @@ const MissionPage = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 'bold' }}>미션 관리</h1>
-        <Button type="primary" size="middle">신규 등록</Button>
-      </div>
-      <Table dataSource={mockMissions} columns={columns} rowKey="id" />
+      <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>매칭 관리</h1>
+      <Table dataSource={matchings} columns={columns} rowKey="id" />
     </div>
   );
 };
 
-export default MissionPage;
+export default MatchingPage;

@@ -1,23 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Table, Tag, Button, Space } from 'antd';
-
-const mockReports = [
-  {
-    id: 1,
-    reportedType: '인증',
-    reportedTarget: '홍길동의 6시 기상 인증',
-    reason: '사진이 본인 인증이 아님',
-    status: '처리 전',
-  },
-  {
-    id: 2,
-    reportedType: '유저',
-    reportedTarget: '김영희',
-    reason: '욕설 사용',
-    status: '처리 완료',
-  },
-];
+import { fetchReports, Report } from '@/services/reportService';
 
 const ReportPage = () => {
+  const [reports, setReports] = useState<Report[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchReports();
+        setReports(data);
+      } catch (e) {
+        console.error('신고 데이터 로딩 실패:', e);
+      }
+    };
+    load();
+  }, []);
+
   const handleResolve = (id: number) => {
     console.log(`신고 ${id} 처리 완료`);
   };
@@ -38,7 +37,7 @@ const ReportPage = () => {
     {
       title: '조치',
       key: 'actions',
-      render: (_: any, record: any) =>
+      render: (_: any, record: Report) =>
         record.status === '처리 전' && (
           <Space>
             <Button type="primary" size="small" onClick={() => handleResolve(record.id)}>
@@ -52,7 +51,7 @@ const ReportPage = () => {
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>신고 관리</h1>
-      <Table dataSource={mockReports} columns={columns} rowKey="id" />
+      <Table dataSource={reports} columns={columns} rowKey="id" />
     </div>
   );
 };
