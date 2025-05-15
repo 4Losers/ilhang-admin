@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppLayout from './components/Layout/AppLayout';
-
 import DashboardPage from './pages/DashboardPage';
 import UserPage from './pages/UserPage';
 import MissionPage from './pages/MissionPage';
@@ -8,6 +7,9 @@ import MatchingPage from './pages/MatchingPage';
 import CertificationPage from './pages/CertificationPage';
 import ReportPage from './pages/ReportPage';
 import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+
 
 const App = () => {
   return (
@@ -22,6 +24,8 @@ const App = () => {
           <Route path="reports" element={<ReportPage />} />
           <Route path="admins" element={<AdminPage />} />
         </Route>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </BrowserRouter>
   );

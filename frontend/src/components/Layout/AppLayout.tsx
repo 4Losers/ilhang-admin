@@ -1,16 +1,29 @@
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import AppHeader from './AppHeader'; // 헤더 import
 
-const { Sider, Content } = Layout;
+const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={200} style={{ background: '#fff', boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
-        <Sidebar />
-      </Sider>
+      {/* 상단 헤더 */}
+      <Header style={{ background: '#fff', padding: 0, height: 64 }}>
+        <AppHeader />
+      </Header>
+
       <Layout>
+        <Sider
+          width={200}
+          style={{
+            background: '#fff',
+            boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Sidebar />
+        </Sider>
+
         <Content
           style={{
             padding: '32px 40px',
