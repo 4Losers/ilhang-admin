@@ -12,7 +12,7 @@ const RegisterPage = () => {
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      await axiosClient.post('/admin/register', values);
+      await axiosClient.post('/admin', values);
       message.success('회원가입 성공');
       navigate('/login');
     } catch (e) {
@@ -21,7 +21,6 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
-
   return (
     <Form onFinish={onFinish} layout="vertical" style={{ maxWidth: 400, margin: '80px auto' }}>
       <h2>회원가입</h2>

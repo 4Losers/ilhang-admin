@@ -20,7 +20,7 @@ const AppHeader = () => {
       <div style={{ fontWeight: 'bold', fontSize: 20 }}>일행 관리자 페이지</div>
 
       <Space>
-        <Button type="link" onClick={() => navigate('/register')}>
+        <Button type="link" onClick={() => navigate('/signup')}>
           회원가입
         </Button>
         <Button type="primary" onClick={() => navigate('/login')}>

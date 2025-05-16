@@ -37,6 +37,15 @@ const LoginPage = () => {
       <Button htmlType="submit" type="primary" loading={loading} block>
         로그인
       </Button>
+
+      <Button
+        type="link"
+        onClick={() => navigate('/signup')}
+        block
+        style={{ marginTop: 12 }}
+      >
+        아직 계정이 없으신가요? 회원가입
+      </Button>
     </Form>
   );
 };
