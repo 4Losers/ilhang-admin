@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Axios 인스턴스 생성
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:8080', // ⚠️ 실제 API 주소로 교체하세요
+  baseURL: 'http://localhost:8080',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
@@ -33,7 +33,6 @@ axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('❌ API Error:', error);
-    // 추가 에러 처리 가능 (예: 401 → 토큰 만료 → 로그아웃 등)
     return Promise.reject(error);
   }
 );

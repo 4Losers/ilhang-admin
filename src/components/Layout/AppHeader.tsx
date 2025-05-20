@@ -1,9 +1,15 @@
-
-import { Button, Space } from 'antd';
+import { Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 const AppHeader = () => {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // accessToken 제거
+    localStorage.removeItem('accessToken');
+    // 로그인 페이지로 이동
+    navigate('/login');
+  };
 
   return (
     <div
@@ -19,14 +25,9 @@ const AppHeader = () => {
     >
       <div style={{ fontWeight: 'bold', fontSize: 20 }}>일행 관리자 페이지</div>
 
-      <Space>
-        <Button type="link" onClick={() => navigate('/signup')}>
-          회원가입
-        </Button>
-        <Button type="primary" onClick={() => navigate('/login')}>
-          로그인
-        </Button>
-      </Space>
+      <Button type="primary" danger onClick={handleLogout}>
+        로그아웃
+      </Button>
     </div>
   );
 };
