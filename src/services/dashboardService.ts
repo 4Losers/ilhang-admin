@@ -4,11 +4,17 @@ import axiosClient from './axiosClient';
 export interface DashboardStats {
   totalUsers: number;
   activeMissions: number;
-  certificationApprovalRate: number; // 0.93
-  matchSuccessRate: number;          // 0.82
+  certificationApprovalRate: number;
+  matchSuccessRate: number;
 }
 
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
-  const response = await axiosClient.get<DashboardStats>('/admin/dashboard/stats');
-  return response.data;
+  const totalRes = await axiosClient.get<number>('/admin/users/dashboard/total-users');
+
+  return {
+    totalUsers: totalRes.data,
+    activeMissions: 0,
+    certificationApprovalRate: 0,
+    matchSuccessRate: 0,
+  };
 };

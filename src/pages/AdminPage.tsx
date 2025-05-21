@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Tag, Button, Space } from 'antd';
+import { Table, Tag, Button } from 'antd';
 import { fetchAdmins, Admin } from '@/services/adminService';
 
 const AdminPage = () => {

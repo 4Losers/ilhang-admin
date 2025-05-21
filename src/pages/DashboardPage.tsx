@@ -6,26 +6,19 @@ const DashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const load = async () => {
-    try {
-      const data = await fetchDashboardStats();
-      if (data) setStats(data);
-    } catch (e) {
-      console.error('대시보드 통계 로딩 실패:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-  load();
-}, []);
-
-if (loading) return <Spin style={{ margin: 48 }} />;
-
-if (!stats) {
-  return <div style={{ padding: 24 }}>📭 통계 데이터가 없습니다.</div>;
-}
-
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchDashboardStats();
+        if (data) setStats(data);
+      } catch (e) {
+        console.error('대시보드 통계 로딩 실패:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   if (loading || !stats) return <Spin style={{ margin: 48 }} />;
 

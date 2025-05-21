@@ -1,7 +1,7 @@
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import AppHeader from './AppHeader'; // 헤더 import
+import AppHeader from './AppHeader';
 
 const { Header, Sider, Content } = Layout;
 
