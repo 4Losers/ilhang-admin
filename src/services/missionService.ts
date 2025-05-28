@@ -42,3 +42,11 @@ export const createMissionTemplate = async (req: Partial<Mission>): Promise<void
 export const toggleMissionActive = async (templateId: number): Promise<void> => {
   await axiosClient.patch(`/admin/missions/${templateId}/active`);
 };
+
+// ✅ 미션 템플릿 수정
+export const updateMissionTemplate = async (
+  templateId: number,
+  updated: Partial<Mission>
+): Promise<void> => {
+  await axiosClient.put(`/admin/missions/${templateId}`, updated);
+};

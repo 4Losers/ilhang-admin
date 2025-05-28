@@ -28,7 +28,7 @@ export const createCategory = async (req: MissionCategoryRequest): Promise<void>
 // 카테고리 수정
 export const updateCategory = async (
     categoryId: number,
-    req: MissionCategoryRequest
+    req: MissionCategoryRequest,
 ): Promise<void> => {
     await axiosClient.put(`/admin/missions/categories/${categoryId}`, req);
 };

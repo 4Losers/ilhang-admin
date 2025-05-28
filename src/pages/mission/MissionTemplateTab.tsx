@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Table, Button, notification } from 'antd';
 import {
-    Table,
-    Button,
-    notification,
-    Switch,
-    Input,
-    Select,
-    Space,
-} from 'antd';
-import { fetchMissions, Mission, createMissionTemplate, toggleMissionActive } from '@/services/missionService';
+    fetchMissions,
+    createMissionTemplate,
+    updateMissionTemplate,
+    toggleMissionActive,
+    Mission,
+} from '@/services/missionService';
 import { MissionCategoryResponse } from '@/services/categoryService';
 import MissionInstanceDrawer from './MissionInstanceDrawer';
-import type { ColumnsType } from 'antd/es/table';
-
-const { Option } = Select;
+import { getMissionTemplateColumns } from './components/MissionTemplateColumns';
 
 type MissionWithDraft = Mission & { isNew?: boolean };
+
 type Props = {
     categories: MissionCategoryResponse[];
 };
@@ -43,13 +40,12 @@ const MissionTemplateTab = ({ categories }: Props) => {
         type: 'CATEGORY',
         categoryId: 1,
     });
+
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editMission, setEditMission] = useState<NewMissionInput | null>(null);
+
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
-
-    const categoryMap = useMemo(
-        () => Object.fromEntries(categories.map((c) => [c.categoryId, c.name])),
-        [categories]
-    );
 
     const load = useCallback(async () => {
         try {
@@ -63,6 +59,10 @@ const MissionTemplateTab = ({ categories }: Props) => {
             });
         }
     }, []);
+
+    useEffect(() => {
+        load();
+    }, [load]);
 
     const handleCreate = async () => {
         const errors = {
@@ -102,149 +102,67 @@ const MissionTemplateTab = ({ categories }: Props) => {
         }
     };
 
-    useEffect(() => {
-        load();
-    }, [load]);
-
     const displayData: MissionWithDraft[] = isCreating
         ? [{ templateId: -1, isNew: true, ...newMission } as MissionWithDraft, ...missions]
         : missions;
 
-    const columns: ColumnsType<MissionWithDraft> = [
-        {
-            title: '템플릿 ID',
-            dataIndex: 'templateId',
-            render: (value, record) => (record.isNew ? '—' : value),
+    const columns = useMemo(() => getMissionTemplateColumns({
+        categories,
+        newMission,
+        validationError,
+        editMission,
+        editingId,
+        onChangeNew: (field, value) => setNewMission(prev => ({ ...prev, [field]: value })),
+        onChangeEdit: (field, value) => setEditMission(prev => ({ ...prev!, [field]: value })),
+        onCreate: handleCreate,
+        onCancelCreate: () => setIsCreating(false),
+        onSaveEdit: async (id) => {
+            try {
+                await updateMissionTemplate(id, editMission!);
+                notification.success({
+                    message: '수정 완료',
+                    description: `'${editMission?.title}' 템플릿이 수정되었습니다.`,
+                });
+                setEditingId(null);
+                setEditMission(null);
+                load();
+            } catch (e) {
+                console.error(e);
+                notification.error({
+                    message: '수정 실패',
+                    description: '서버 오류로 인해 수정할 수 없습니다.',
+                });
+            }
         },
-        {
-            title: '제목',
-            dataIndex: 'title',
-            render: (value, record) =>
-                record.isNew ? (
-                    <Input
-                        value={newMission.title}
-                        onChange={(e) => setNewMission({ ...newMission, title: e.target.value })}
-                        status={validationError.title ? 'error' : ''}
-                    />
-                ) : (
-                    value
-                ),
+        onCancelEdit: () => {
+            setEditingId(null);
+            setEditMission(null);
         },
-        {
-            title: '설명',
-            dataIndex: 'description',
-            render: (value, record) =>
-                record.isNew ? (
-                    <Input
-                        value={newMission.description}
-                        onChange={(e) => setNewMission({ ...newMission, description: e.target.value })}
-                        status={validationError.description ? 'error' : ''}
-                    />
-                ) : (
-                    value
-                ),
+        onClickEdit: (id, mission) => {
+            setEditingId(id);
+            setEditMission(mission);
         },
-        {
-            title: '카테고리',
-            dataIndex: 'categoryId',
-            render: (value, record) =>
-                record.isNew ? (
-                    <Select
-                        value={newMission.categoryId}
-                        onChange={(val) => setNewMission({ ...newMission, categoryId: val })}
-                        style={{ width: 160 }}
-                        status={validationError.categoryId ? 'error' : ''}
-                        placeholder="카테고리 선택"
-                    >
-                        {categories.map((cat) => (
-                            <Option key={cat.categoryId} value={cat.categoryId}>
-                                {cat.name}
-                            </Option>
-                        ))}
-                    </Select>
-                ) : (
-                    categoryMap[value] ?? `카테고리 ID ${value}`
-                ),
+        onToggleActive: async (id, title) => {
+            try {
+                await toggleMissionActive(id);
+                notification.success({
+                    message: '템플릿 상태 변경',
+                    description: `'${title}' 템플릿의 활성화 상태가 변경되었습니다.`,
+                });
+                load();
+            } catch (e) {
+                console.error(e);
+                notification.error({
+                    message: '상태 변경 실패',
+                    description: '활성화 상태를 변경할 수 없습니다.',
+                });
+            }
         },
-        {
-            title: '타입',
-            dataIndex: 'type',
-            render: (value, record) =>
-                record.isNew ? (
-                    <Select
-                        value={newMission.type}
-                        onChange={(val) => setNewMission({ ...newMission, type: val as NewMissionInput['type'] })}
-                        style={{ width: 140 }}
-                        status={validationError.type ? 'error' : ''}
-                    >
-                        <Option value="CATEGORY">CATEGORY</Option>
-                        <Option value="SEQUENTIAL">SEQUENTIAL</Option>
-                        <Option value="MIXED">MIXED</Option>
-                    </Select>
-                ) : (
-                    value
-                ),
+        onOpenDrawer: (id) => {
+            setSelectedTemplateId(id);
+            setDrawerOpen(true);
         },
-        {
-            title: '활성화',
-            dataIndex: 'isActive',
-            render: (value, record) =>
-                record.isNew ? (
-                    <span style={{ color: '#999' }}>—</span>
-                ) : (
-                    <Switch
-                        checked={value}
-                        onChange={async () => {
-                            try {
-                                await toggleMissionActive(record.templateId);
-                                notification.success({
-                                    message: '템플릿 상태 변경',
-                                    description: `'${record.title}' 템플릿의 활성화 상태가 변경되었습니다.`,
-                                });
-                                load();
-                            } catch (e) {
-                                console.error(e);
-                                notification.error({
-                                    message: '상태 변경 실패',
-                                    description: '활성화 상태를 변경할 수 없습니다.',
-                                });
-                            }
-                        }}
-                    />
-                ),
-        },
-        {
-            title: '인스턴스',
-            key: 'instances',
-            render: (_, record) =>
-                !record.isNew && (
-                    <Button
-                        size="small"
-                        onClick={() => {
-                            setSelectedTemplateId(record.templateId);
-                            setDrawerOpen(true);
-                        }}
-                    >
-                        보기
-                    </Button>
-                ),
-        },
-        {
-            title: '액션',
-            key: 'actions',
-            render: (_, record) =>
-                record.isNew ? (
-                    <Space>
-                        <Button type="primary" size="small" onClick={handleCreate}>
-                            저장
-                        </Button>
-                        <Button danger size="small" onClick={() => setIsCreating(false)}>
-                            취소
-                        </Button>
-                    </Space>
-                ) : null,
-        },
-    ];
+    }), [categories, newMission, validationError, editMission, editingId]);
 
     return (
         <div>
