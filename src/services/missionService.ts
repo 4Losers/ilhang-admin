@@ -22,6 +22,34 @@ export interface CreateMissionTemplateRequest {
   thumbnailUrl: string;
 }
 
+export interface MissionInstanceResponse {
+  instanceId: number;
+  templateId: number;
+  subTitle: string;
+  subDescription: string;
+  orderInTemplate: number;
+  nextInstanceId: number | null;
+}
+
+export interface MissionPeriodResponse {
+  periodId: number;
+  templateId: number;
+  cycleId: number;
+}
+
+export interface MissionPointResponse {
+  pointId: number;
+  periodId: number;
+  challengePoint: number;
+}
+
+export interface MissionTemplateDetailResponse {
+  template: Mission;
+  instances: MissionInstanceResponse[];
+  periods: MissionPeriodResponse[];
+  points: MissionPointResponse[];
+}
+
 // ✅ 미션 목록 조회
 export const fetchMissions = async (): Promise<Mission[]> => {
   const response = await axiosClient.get<Mission[]>('/admin/missions');
@@ -49,4 +77,11 @@ export const updateMissionTemplate = async (
   updated: Partial<Mission>
 ): Promise<void> => {
   await axiosClient.put(`/admin/missions/${templateId}`, updated);
+};
+
+export const fetchMissionTemplateDetail = async (
+  templateId: number
+): Promise<MissionTemplateDetailResponse> => {
+  const response = await axiosClient.get<MissionTemplateDetailResponse>(`/admin/missions/${templateId}/detail`);
+  return response.data;
 };

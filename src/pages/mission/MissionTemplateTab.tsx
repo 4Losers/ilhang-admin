@@ -10,6 +10,7 @@ import {
 import { MissionCategoryResponse } from '@/services/categoryService';
 import MissionInstanceDrawer from './MissionInstanceDrawer';
 import { getMissionTemplateColumns } from './components/MissionTemplateColumns';
+import { fetchMissionTemplateDetail, MissionTemplateDetailResponse } from '@/services/missionService';
 
 type MissionWithDraft = Mission & { isNew?: boolean };
 
@@ -46,6 +47,9 @@ const MissionTemplateTab = ({ categories }: Props) => {
 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+
+    const [templateDetail, setTemplateDetail] = useState<MissionTemplateDetailResponse | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
     const load = useCallback(async () => {
         try {
@@ -158,9 +162,23 @@ const MissionTemplateTab = ({ categories }: Props) => {
                 });
             }
         },
-        onOpenDrawer: (id) => {
-            setSelectedTemplateId(id);
-            setDrawerOpen(true);
+        onOpenDrawer: async (id) => {
+            try {
+                setLoadingDetail(true);
+                setSelectedTemplateId(id);
+                setDrawerOpen(true); // ← 드로어는 우선 열어둠 (로딩 UI 보여주기 위함)
+
+                const detail = await fetchMissionTemplateDetail(id);
+                setTemplateDetail(detail);
+            } catch (e) {
+                console.error(e);
+                notification.error({
+                    message: '상세 정보 조회 실패',
+                    description: '템플릿 상세 정보를 불러오는 데 실패했습니다.',
+                });
+            } finally {
+                setLoadingDetail(false);
+            }
         },
     }), [categories, newMission, validationError, editMission, editingId]);
 
@@ -191,6 +209,8 @@ const MissionTemplateTab = ({ categories }: Props) => {
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
                 templateId={selectedTemplateId}
+                loading={loadingDetail}
+                detail={templateDetail}
             />
         </div>
     );
