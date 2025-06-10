@@ -5,14 +5,14 @@ import {
     createMissionTemplate,
     updateMissionTemplate,
     toggleMissionActive,
-    Mission,
+    MissionTemplateView,
 } from '@/services/missionService';
 import { MissionCategoryResponse } from '@/services/categoryService';
 import MissionInstanceDrawer from './MissionInstanceDrawer';
 import { getMissionTemplateColumns } from './components/MissionTemplateColumns';
 import { fetchMissionTemplateDetail, MissionTemplateDetailResponse } from '@/services/missionService';
 
-type MissionWithDraft = Mission & { isNew?: boolean };
+type MissionWithDraft = MissionTemplateView & { isNew?: boolean };
 
 type Props = {
     categories: MissionCategoryResponse[];
@@ -33,7 +33,7 @@ const MissionTemplateTab = ({ categories }: Props) => {
         type: false,
     });
 
-    const [missions, setMissions] = useState<Mission[]>([]);
+    const [missions, setMissions] = useState<MissionTemplateView[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [newMission, setNewMission] = useState<NewMissionInput>({
         title: '',
@@ -53,7 +53,14 @@ const MissionTemplateTab = ({ categories }: Props) => {
 
     const load = useCallback(async () => {
         try {
-            const data = await fetchMissions();
+            const response = await fetchMissions();
+            const data = Array.isArray(response)
+                ? response
+                : Array.isArray((response as any)?.result)
+                    ? (response as any).result
+                    : [];
+
+            console.log('👉 최종 적용할 missions:', data);
             setMissions(data);
         } catch (e) {
             console.error('미션 불러오기 실패:', e);
@@ -106,9 +113,12 @@ const MissionTemplateTab = ({ categories }: Props) => {
         }
     };
 
-    const displayData: MissionWithDraft[] = isCreating
-        ? [{ templateId: -1, isNew: true, ...newMission } as MissionWithDraft, ...missions]
-        : missions;
+    const displayData: MissionWithDraft[] = useMemo(() => {
+        const base = Array.isArray(missions) ? missions : [];
+        return isCreating
+            ? [{ templateId: -1, isNew: true, ...newMission } as MissionWithDraft, ...base]
+            : base;
+    }, [isCreating, missions, newMission]);
 
     const columns = useMemo(() => getMissionTemplateColumns({
         categories,
@@ -143,6 +153,7 @@ const MissionTemplateTab = ({ categories }: Props) => {
             setEditMission(null);
         },
         onClickEdit: (id, mission) => {
+            if (!mission) return;
             setEditingId(id);
             setEditMission(mission);
         },
@@ -166,7 +177,7 @@ const MissionTemplateTab = ({ categories }: Props) => {
             try {
                 setLoadingDetail(true);
                 setSelectedTemplateId(id);
-                setDrawerOpen(true); // ← 드로어는 우선 열어둠 (로딩 UI 보여주기 위함)
+                setDrawerOpen(true);
 
                 const detail = await fetchMissionTemplateDetail(id);
                 setTemplateDetail(detail);

@@ -30,6 +30,9 @@ const MissionInstanceDrawer = ({ open, onClose, templateId, loading, detail }: P
 
     // ✅ detail 바뀌면 인스턴스 목록 반영
     useEffect(() => {
+        console.log('detail: ', detail);
+        console.log('detail.instance: ', detail?.instances);
+
         if (detail?.instances) {
             setInstances(detail.instances);
         }

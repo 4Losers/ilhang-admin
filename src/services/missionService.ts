@@ -13,6 +13,19 @@ export interface Mission {
   isActive: boolean;
 }
 
+export interface MissionTemplateView {
+  templateId: number;
+  categoryId: number;
+  categoryName: string;
+  title: string;
+  description: string;
+  type: MissionType;
+  thumbnailUrl: string;
+  isActive: boolean;
+  createdTime: string;
+  updatedTime: string;
+}
+
 // ✅ 미션 생성 요청 타입 (템플릿 전용)
 export interface CreateMissionTemplateRequest {
   categoryId: number;
@@ -50,10 +63,23 @@ export interface MissionTemplateDetailResponse {
   points: MissionPointResponse[];
 }
 
-// ✅ 미션 목록 조회
-export const fetchMissions = async (): Promise<Mission[]> => {
-  const response = await axiosClient.get<Mission[]>('/admin/missions');
-  return response.data;
+// ✅ 미션 목록 조회 (PageHelper 구조 대응)
+export const fetchMissions = async (): Promise<MissionTemplateView[]> => {
+  const response = await axiosClient.get('/admin/missions/views', {
+    params: { page: 1, size: 999 },
+  });
+
+  const raw = response.data as any;
+
+  console.log('📦 response:', response);
+  console.log('📦 response.data:', raw);
+
+  if (Array.isArray(raw.list)) {
+    return raw.list;
+  }
+
+  console.warn('⚠️ 알 수 없는 응답 형식:', raw);
+  return [];
 };
 
 // ✅ 미션 템플릿 생성 (thumbnailUrl 포함된 정식 생성 요청)
@@ -79,9 +105,12 @@ export const updateMissionTemplate = async (
   await axiosClient.put(`/admin/missions/${templateId}`, updated);
 };
 
+// ✅ 상세 정보 조회
 export const fetchMissionTemplateDetail = async (
   templateId: number
 ): Promise<MissionTemplateDetailResponse> => {
-  const response = await axiosClient.get<MissionTemplateDetailResponse>(`/admin/missions/${templateId}/detail`);
+  const response = await axiosClient.get<MissionTemplateDetailResponse>(
+    `/admin/missions/${templateId}/detail`
+  );
   return response.data;
 };

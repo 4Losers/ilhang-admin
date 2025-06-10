@@ -1,15 +1,11 @@
-// pages/mission/components/MissionTemplateColumns.tsx
-
-import { ColumnsType } from 'antd/es/table';
-import { Button, Select, Switch, notification, Space } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { Button, Switch } from 'antd';
 import MissionTemplateFormRow from './MissionTemplateFormRow';
 import MissionTemplateEditableRow from './MissionTemplateEditableRow';
 import { MissionCategoryResponse } from '@/services/categoryService';
-import { Mission } from '@/services/missionService';
+import { MissionTemplateView } from '@/services/missionService';
 
-const { Option } = Select;
-
-type MissionWithDraft = Mission & { isNew?: boolean };
+type MissionWithDraft = MissionTemplateView & { isNew?: boolean };
 
 type NewMissionInput = {
     title: string;
@@ -90,7 +86,10 @@ export const getMissionTemplateColumns = ({
                         <div><strong>{record.title}</strong></div>
                         <div style={{ color: '#666' }}>{record.description}</div>
                         <div style={{ fontSize: 12 }}>
-                            카테고리: {categories.find(c => c.categoryId === record.categoryId)?.name ?? record.categoryId} | 타입: {record.type}
+                            카테고리: {
+                                categories.find(c => c.categoryId === record.categoryId)?.name
+                                ?? `ID: ${record.categoryId}`
+                            }| 타입: {record.type}
                         </div>
                     </>
                 );
