@@ -3,7 +3,7 @@ import axiosClient from './axiosClient';
 // ✅ 공통 타입
 export type MissionType = 'CATEGORY' | 'SEQUENTIAL' | 'MIXED';
 
-// ✅ 미션 목록 응답 타입
+// ✅ 조회 응답 타입
 export interface Mission {
   templateId: number;
   title: string;
@@ -24,15 +24,6 @@ export interface MissionTemplateView {
   isActive: boolean;
   createdTime: string;
   updatedTime: string;
-}
-
-// ✅ 미션 생성 요청 타입 (템플릿 전용)
-export interface CreateMissionTemplateRequest {
-  categoryId: number;
-  title: string;
-  description: string;
-  type: MissionType;
-  thumbnailUrl: string;
 }
 
 export interface MissionInstanceResponse {
@@ -63,17 +54,50 @@ export interface MissionTemplateDetailResponse {
   points: MissionPointResponse[];
 }
 
-// ✅ 미션 목록 조회 (PageHelper 구조 대응)
+// ✅ 생성 요청 타입
+export interface CreateMissionTemplateRequest {
+  categoryId: number;
+  title: string;
+  description: string;
+  type: MissionType;
+  thumbnailUrl: string;
+}
+
+// ✅ 수정 요청 타입
+export interface UpdateMissionTemplateRequest {
+  categoryId: number;
+  title: string;
+  description: string;
+  type: MissionType;
+  thumbnailUrl: string;
+  detail: string;
+}
+
+export interface UpdateMissionInstanceRequest {
+  templateId: number;
+  subTitle: string;
+  subDescription: string;
+  orderInTemplate: number;
+  nextInstanceId: number | null;
+}
+
+export interface UpdateMissionPeriodRequest {
+  templateId: number;
+  cycleId: number;
+}
+
+export interface UpdateMissionPointRequest {
+  periodId: number;
+  challengePoint: number;
+}
+
+// ✅ 조회 API
 export const fetchMissions = async (): Promise<MissionTemplateView[]> => {
   const response = await axiosClient.get('/admin/missions/views', {
     params: { page: 1, size: 999 },
   });
 
   const raw = response.data as any;
-
-  console.log('📦 response:', response);
-  console.log('📦 response.data:', raw);
-
   if (Array.isArray(raw.list)) {
     return raw.list;
   }
@@ -82,30 +106,6 @@ export const fetchMissions = async (): Promise<MissionTemplateView[]> => {
   return [];
 };
 
-// ✅ 미션 템플릿 생성 (thumbnailUrl 포함된 정식 생성 요청)
-export const createMission = async (mission: CreateMissionTemplateRequest): Promise<void> => {
-  await axiosClient.post('/admin/missions', mission);
-};
-
-// ✅ 미션 템플릿 임시 생성 (인라인 작성용)
-export const createMissionTemplate = async (req: Partial<Mission>): Promise<void> => {
-  await axiosClient.post('/admin/missions', req);
-};
-
-// ✅ 템플릿 활성화/비활성화 토글
-export const toggleMissionActive = async (templateId: number): Promise<void> => {
-  await axiosClient.patch(`/admin/missions/${templateId}/active`);
-};
-
-// ✅ 미션 템플릿 수정
-export const updateMissionTemplate = async (
-  templateId: number,
-  updated: Partial<Mission>
-): Promise<void> => {
-  await axiosClient.put(`/admin/missions/${templateId}`, updated);
-};
-
-// ✅ 상세 정보 조회
 export const fetchMissionTemplateDetail = async (
   templateId: number
 ): Promise<MissionTemplateDetailResponse> => {
@@ -113,4 +113,54 @@ export const fetchMissionTemplateDetail = async (
     `/admin/missions/${templateId}/detail`
   );
   return response.data;
+};
+
+// ✅ 생성 API
+export const createMission = async (
+  mission: CreateMissionTemplateRequest
+): Promise<void> => {
+  await axiosClient.post('/admin/missions', mission);
+};
+
+// 임시 생성 (간소화된 형태)
+export const createMissionTemplate = async (
+  req: Partial<Mission>
+): Promise<void> => {
+  await axiosClient.post('/admin/missions', req);
+};
+
+// ✅ 수정 API
+export const updateMissionTemplate = async (
+  templateId: number,
+  updated: Partial<Mission>
+): Promise<void> => {
+  await axiosClient.put(`/admin/missions/${templateId}`, updated);
+};
+
+export const updateMissionInstance = async (
+  instanceId: number,
+  data: UpdateMissionInstanceRequest
+): Promise<void> => {
+  await axiosClient.put(`/admin/missions/instances/${instanceId}`, data);
+};
+
+export const updateMissionPeriod = async (
+  periodId: number,
+  data: UpdateMissionPeriodRequest
+): Promise<void> => {
+  await axiosClient.put(`/admin/missions/periods/${periodId}`, data);
+};
+
+export const updateMissionPoint = async (
+  pointId: number,
+  data: UpdateMissionPointRequest
+): Promise<void> => {
+  await axiosClient.put(`/admin/missions/points/${pointId}`, data);
+};
+
+// ✅ 상태 변경 API
+export const toggleMissionActive = async (
+  templateId: number
+): Promise<void> => {
+  await axiosClient.patch(`/admin/missions/${templateId}/active`);
 };
