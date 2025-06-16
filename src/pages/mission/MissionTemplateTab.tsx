@@ -8,7 +8,7 @@ import {
     MissionTemplateView,
 } from '@/services/missionService';
 import { MissionCategoryResponse } from '@/services/categoryService';
-import MissionInstanceDrawer from './MissionInstanceDrawer';
+import MissionTemplateDetailDrawer from './MissionTemplateDetailDrawer';
 import { getMissionTemplateColumns } from './components/MissionTemplateColumns';
 import { fetchMissionTemplateDetail, MissionTemplateDetailResponse } from '@/services/missionService';
 
@@ -216,7 +216,7 @@ const MissionTemplateTab = ({ categories }: Props) => {
                 pagination={{ pageSize: 10 }}
             />
 
-            <MissionInstanceDrawer
+            <MissionTemplateDetailDrawer
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
                 templateId={selectedTemplateId}

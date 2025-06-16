@@ -1,6 +1,6 @@
 // src/components/CreateMissionModal.tsx
 import { Modal, Form, Input, Select, InputNumber, message } from 'antd';
-import { createMission, CreateMissionRequest } from '@/services/missionService';
+import { createMission, CreateMissionTemplateRequest } from '@/services/missionService';
 import { useState } from 'react';
 
 interface Props {

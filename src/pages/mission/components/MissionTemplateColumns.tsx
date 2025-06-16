@@ -109,7 +109,7 @@ export const getMissionTemplateColumns = ({
                 ),
         },
         {
-            title: '인스턴스',
+            title: '미션 상세보기',
             key: 'instances',
             render: (_, record) =>
                 !record.isNew && (
