@@ -1,9 +1,9 @@
 import type { ColumnsType } from 'antd/es/table';
 import { Button, Switch } from 'antd';
 import MissionTemplateFormRow from './MissionTemplateFormRow';
-import MissionTemplateEditableRow from './MissionTemplateEditableRow';
 import { MissionCategoryResponse } from '@/services/categoryService';
 import { MissionTemplateView } from '@/services/missionService';
+import { MISSION_STYLES } from '@/utils/missionUtils';
 
 type MissionWithDraft = MissionTemplateView & { isNew?: boolean };
 
@@ -18,34 +18,22 @@ type Params = {
     categories: MissionCategoryResponse[];
     newMission: NewMissionInput;
     validationError: Record<keyof NewMissionInput, boolean>;
-    editMission: NewMissionInput | null;
-    editingId: number | null;
     onChangeNew: (field: string, value: any) => void;
-    onChangeEdit: (field: keyof NewMissionInput, value: any) => void;
     onCreate: () => void;
     onCancelCreate: () => void;
-    onSaveEdit: (id: number) => void;
-    onCancelEdit: () => void;
-    onClickEdit: (id: number, mission: NewMissionInput) => void;
+    onTitleClick: (id: number) => void;
     onToggleActive: (id: number, title: string) => void;
-    onOpenDrawer: (id: number) => void;
 };
 
 export const getMissionTemplateColumns = ({
     categories,
     newMission,
     validationError,
-    editMission,
-    editingId,
     onChangeNew,
-    onChangeEdit,
     onCreate,
     onCancelCreate,
-    onSaveEdit,
-    onCancelEdit,
-    onClickEdit,
+    onTitleClick,
     onToggleActive,
-    onOpenDrawer,
 }: Params): ColumnsType<MissionWithDraft> => [
         {
             title: '템플릿 ID',
@@ -69,23 +57,18 @@ export const getMissionTemplateColumns = ({
                     );
                 }
 
-                if (record.templateId === editingId && editMission) {
-                    return (
-                        <MissionTemplateEditableRow
-                            editMission={editMission}
-                            categories={categories}
-                            onChange={onChangeEdit}
-                            onSave={() => onSaveEdit(record.templateId)}
-                            onCancel={onCancelEdit}
-                        />
-                    );
-                }
-
                 return (
                     <>
-                        <div><strong>{record.title}</strong></div>
-                        <div style={{ color: '#666' }}>{record.description}</div>
-                        <div style={{ fontSize: 12 }}>
+                        <div>
+                            <span
+                                style={MISSION_STYLES.clickableTitle}
+                                onClick={() => onTitleClick(record.templateId)}
+                            >
+                                {record.title}
+                            </span>
+                        </div>
+                        <div style={MISSION_STYLES.description}>{record.description}</div>
+                        <div style={MISSION_STYLES.metaInfo}>
                             카테고리: {
                                 categories.find(c => c.categoryId === record.categoryId)?.name
                                 ?? `ID: ${record.categoryId}`
@@ -99,7 +82,7 @@ export const getMissionTemplateColumns = ({
             title: '활성화',
             dataIndex: 'isActive',
             render: (value, record) =>
-                record.isNew || editingId === record.templateId ? (
+                record.isNew ? (
                     <span style={{ color: '#999' }}>—</span>
                 ) : (
                     <Switch
@@ -107,43 +90,5 @@ export const getMissionTemplateColumns = ({
                         onChange={() => onToggleActive(record.templateId, record.title)}
                     />
                 ),
-        },
-        {
-            title: '미션 상세보기',
-            key: 'instances',
-            render: (_, record) =>
-                !record.isNew && (
-                    <Button
-                        size="small"
-                        onClick={() => onOpenDrawer(record.templateId)}
-                    >
-                        보기
-                    </Button>
-                ),
-        },
-        {
-            title: '액션',
-            key: 'actions',
-            render: (_, record) => {
-                if (record.isNew) return null;
-
-                if (record.templateId === editingId) return null;
-
-                return (
-                    <Button
-                        size="small"
-                        onClick={() =>
-                            onClickEdit(record.templateId, {
-                                title: record.title,
-                                description: record.description,
-                                categoryId: record.categoryId,
-                                type: record.type,
-                            })
-                        }
-                    >
-                        수정
-                    </Button>
-                );
-            },
         },
     ];

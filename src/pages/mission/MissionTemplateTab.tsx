@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Table, Button, notification } from 'antd';
+import { Table, Button, message } from 'antd';
 import {
     fetchMissions,
     createMissionTemplate,
-    updateMissionTemplate,
     toggleMissionActive,
+    fetchMissionTemplateDetail,
     MissionTemplateView,
+    MissionTemplateDetailResponse
 } from '@/services/missionService';
 import { MissionCategoryResponse } from '@/services/categoryService';
+import { validateMissionTemplate, hasValidationErrors } from '@/utils/missionUtils';
 import MissionTemplateDetailDrawer from './MissionTemplateDetailDrawer';
 import { getMissionTemplateColumns } from './components/MissionTemplateColumns';
-import { fetchMissionTemplateDetail, MissionTemplateDetailResponse } from '@/services/missionService';
 
 type MissionWithDraft = MissionTemplateView & { isNew?: boolean };
 
@@ -42,32 +43,19 @@ const MissionTemplateTab = ({ categories }: Props) => {
         categoryId: 1,
     });
 
-    const [editingId, setEditingId] = useState<number | null>(null);
-    const [editMission, setEditMission] = useState<NewMissionInput | null>(null);
-
+    // 드로워 관련 상태
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
-
     const [templateDetail, setTemplateDetail] = useState<MissionTemplateDetailResponse | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
 
     const load = useCallback(async () => {
         try {
-            const response = await fetchMissions();
-            const data = Array.isArray(response)
-                ? response
-                : Array.isArray((response as any)?.result)
-                    ? (response as any).result
-                    : [];
-
-            console.log('👉 최종 적용할 missions:', data);
+            const data = await fetchMissions();
             setMissions(data);
         } catch (e) {
             console.error('미션 불러오기 실패:', e);
-            notification.error({
-                message: '미션 불러오기 실패',
-                description: '서버에서 미션 템플릿 목록을 가져오는 데 실패했습니다.',
-            });
+            message.error('미션 템플릿 목록을 가져오는 데 실패했습니다.');
         }
     }, []);
 
@@ -76,40 +64,93 @@ const MissionTemplateTab = ({ categories }: Props) => {
     }, [load]);
 
     const handleCreate = async () => {
-        const errors = {
-            title: !newMission.title.trim(),
-            description: !newMission.description.trim(),
-            categoryId: !newMission.categoryId,
-            type: !newMission.type,
-        };
-
-        const hasError = Object.values(errors).some(Boolean);
+        const errors = validateMissionTemplate(newMission);
         setValidationError(errors);
 
-        if (hasError) {
-            notification.warning({
-                message: '입력값 확인',
-                description: '모든 항목을 입력해주세요.',
-            });
+        if (hasValidationErrors(errors)) {
+            message.warning('모든 항목을 입력해주세요.');
             return;
         }
 
         try {
             await createMissionTemplate(newMission);
-            notification.success({
-                message: '미션 템플릿 생성 완료',
-                description: `'${newMission.title}' 템플릿이 성공적으로 추가되었습니다.`,
-            });
+            message.success(`'${newMission.title}' 템플릿이 성공적으로 추가되었습니다.`);
             setIsCreating(false);
             setNewMission({ title: '', description: '', type: 'CATEGORY', categoryId: 1 });
             setValidationError({ title: false, description: false, categoryId: false, type: false });
             load();
         } catch (e) {
             console.error(e);
-            notification.error({
-                message: '템플릿 생성 실패',
-                description: '서버 요청 중 문제가 발생했습니다.',
-            });
+            message.error('템플릿 생성 중 문제가 발생했습니다.');
+        }
+    };
+
+    const handleTitleClick = async (templateId: number) => {
+        try {
+            setLoadingDetail(true);
+            setSelectedTemplateId(templateId);
+            setDrawerOpen(true);
+
+            const detail = await fetchMissionTemplateDetail(templateId);
+            const matchedFromView = missions.find(m => m.templateId === templateId);
+            if (matchedFromView) {
+                setTemplateDetail({
+                    ...matchedFromView,  // 기본 정보 (title, description, categoryId, type 등)
+                    ...detail,           // 상세 정보 (periods, points, instances)
+                });
+            } else {
+                message.error('미션 정보를 찾을 수 없습니다.');
+                setDrawerOpen(false);
+            }
+        } catch (e) {
+            console.error(e);
+            message.error('템플릿 상세 정보를 불러오는 데 실패했습니다.');
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const handleDrawerClose = () => {
+        setDrawerOpen(false);
+        setSelectedTemplateId(null);
+        setTemplateDetail(null);
+        // 드로워가 닫힐 때 목록 새로고침
+        load();
+    };
+
+    const handleToggleActive = async (id: number, title: string) => {
+        try {
+            await toggleMissionActive(id);
+            message.success(`'${title}' 템플릿의 활성화 상태가 변경되었습니다.`);
+            load();
+        } catch (e) {
+            console.error(e);
+            message.error('활성화 상태를 변경할 수 없습니다.');
+        }
+    };
+
+    const handleDrawerSave = async () => {
+        try {
+            const updatedMissions = await fetchMissions();  // missions 목록 새로고침
+            setMissions(updatedMissions);
+            if (selectedTemplateId) {
+                // detail 정보도 새로고침
+                const detail = await fetchMissionTemplateDetail(selectedTemplateId);
+                const matchedFromView = updatedMissions.find(m => m.templateId === selectedTemplateId);
+                if (matchedFromView) {
+                    const updatedDetail = {
+                        ...matchedFromView,
+                        ...detail,
+                    };
+                    setTemplateDetail(updatedDetail);
+                    return updatedDetail;  // 새로운 detail 정보 반환
+                }
+            }
+            throw new Error('템플릿을 찾을 수 없습니다.');
+        } catch (e) {
+            console.error('새로고침 실패:', e);
+            message.error('정보를 새로고침하는데 실패했습니다.');
+            throw e;  // 에러를 상위로 전파
         }
     };
 
@@ -124,74 +165,12 @@ const MissionTemplateTab = ({ categories }: Props) => {
         categories,
         newMission,
         validationError,
-        editMission,
-        editingId,
         onChangeNew: (field, value) => setNewMission(prev => ({ ...prev, [field]: value })),
-        onChangeEdit: (field, value) => setEditMission(prev => ({ ...prev!, [field]: value })),
         onCreate: handleCreate,
         onCancelCreate: () => setIsCreating(false),
-        onSaveEdit: async (id) => {
-            try {
-                await updateMissionTemplate(id, editMission!);
-                notification.success({
-                    message: '수정 완료',
-                    description: `'${editMission?.title}' 템플릿이 수정되었습니다.`,
-                });
-                setEditingId(null);
-                setEditMission(null);
-                load();
-            } catch (e) {
-                console.error(e);
-                notification.error({
-                    message: '수정 실패',
-                    description: '서버 오류로 인해 수정할 수 없습니다.',
-                });
-            }
-        },
-        onCancelEdit: () => {
-            setEditingId(null);
-            setEditMission(null);
-        },
-        onClickEdit: (id, mission) => {
-            if (!mission) return;
-            setEditingId(id);
-            setEditMission(mission);
-        },
-        onToggleActive: async (id, title) => {
-            try {
-                await toggleMissionActive(id);
-                notification.success({
-                    message: '템플릿 상태 변경',
-                    description: `'${title}' 템플릿의 활성화 상태가 변경되었습니다.`,
-                });
-                load();
-            } catch (e) {
-                console.error(e);
-                notification.error({
-                    message: '상태 변경 실패',
-                    description: '활성화 상태를 변경할 수 없습니다.',
-                });
-            }
-        },
-        onOpenDrawer: async (id) => {
-            try {
-                setLoadingDetail(true);
-                setSelectedTemplateId(id);
-                setDrawerOpen(true);
-
-                const detail = await fetchMissionTemplateDetail(id);
-                setTemplateDetail(detail);
-            } catch (e) {
-                console.error(e);
-                notification.error({
-                    message: '상세 정보 조회 실패',
-                    description: '템플릿 상세 정보를 불러오는 데 실패했습니다.',
-                });
-            } finally {
-                setLoadingDetail(false);
-            }
-        },
-    }), [categories, newMission, validationError, editMission, editingId]);
+        onTitleClick: handleTitleClick,
+        onToggleActive: handleToggleActive,
+    }), [categories, newMission, validationError, missions]);
 
     return (
         <div>
@@ -218,10 +197,12 @@ const MissionTemplateTab = ({ categories }: Props) => {
 
             <MissionTemplateDetailDrawer
                 open={drawerOpen}
-                onClose={() => setDrawerOpen(false)}
+                onClose={handleDrawerClose}
                 templateId={selectedTemplateId}
                 loading={loadingDetail}
                 detail={templateDetail}
+                categories={categories}
+                onSave={handleDrawerSave}
             />
         </div>
     );

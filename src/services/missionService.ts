@@ -3,7 +3,49 @@ import axiosClient from './axiosClient';
 // ✅ 공통 타입
 export type MissionType = 'CATEGORY' | 'SEQUENTIAL' | 'MIXED';
 
-// ✅ 조회 응답 타입
+// ✅ 미션 인스턴스 타입
+export interface MissionInstance {
+  instanceId: number;
+  subTitle: string;
+  subDescription: string;
+  orderInTemplate: number;
+  nextInstanceId: number | null;
+}
+
+// ✅ 미션 주기 타입
+export interface MissionPeriod {
+  periodId: number;
+  cycleId: number;
+}
+
+// ✅ 미션 포인트 타입
+export interface MissionPoint {
+  pointId: number;
+  periodId: number;
+  challengePoint: number;
+}
+
+// ✅ 미션 상세 정보 타입 (공통)
+export interface MissionDetail {
+  goodPoints: string[];
+  howToProceed: string[];
+  certification: {
+    description: string;
+    deadline: string;
+    examples: {
+      imageUrl: string;
+      caption: string;
+      success: boolean;
+    }[];
+  };
+  challengeInfo: {
+    availableCycles: string[];
+    estimatedDuration: string;
+  };
+  relatedMissionIds: number[];
+}
+
+// ✅ 기본 미션 타입
 export interface Mission {
   templateId: number;
   title: string;
@@ -13,45 +55,22 @@ export interface Mission {
   isActive: boolean;
 }
 
-export interface MissionTemplateView {
-  templateId: number;
-  categoryId: number;
+// ✅ 미션 템플릿 조회용 타입
+export interface MissionTemplateView extends Mission {
   categoryName: string;
-  title: string;
-  description: string;
-  type: MissionType;
   thumbnailUrl: string;
-  isActive: boolean;
   createdTime: string;
   updatedTime: string;
+  detail?: MissionDetail;
 }
 
-export interface MissionInstanceResponse {
-  instanceId: number;
-  templateId: number;
-  subTitle: string;
-  subDescription: string;
-  orderInTemplate: number;
-  nextInstanceId: number | null;
-}
-
-export interface MissionPeriodResponse {
-  periodId: number;
-  templateId: number;
-  cycleId: number;
-}
-
-export interface MissionPointResponse {
-  pointId: number;
-  periodId: number;
-  challengePoint: number;
-}
-
-export interface MissionTemplateDetailResponse {
-  template: Mission;
-  instances: MissionInstanceResponse[];
-  periods: MissionPeriodResponse[];
-  points: MissionPointResponse[];
+// ✅ 미션 템플릿 상세 응답 타입
+export interface MissionTemplateDetailResponse extends Mission {
+  thumbnailUrl: string;
+  detail: MissionDetail;
+  instances: MissionInstance[];
+  periods: MissionPeriod[];
+  points: MissionPoint[];
 }
 
 // ✅ 생성 요청 타입
@@ -63,16 +82,17 @@ export interface CreateMissionTemplateRequest {
   thumbnailUrl: string;
 }
 
-// ✅ 수정 요청 타입
-export interface UpdateMissionTemplateRequest {
+// ✅ 상세 수정 요청 타입
+export interface UpdateMissionTemplateWithDetailRequest {
   categoryId: number;
   title: string;
   description: string;
   type: MissionType;
   thumbnailUrl: string;
-  detail: string;
+  detail: MissionDetail;
 }
 
+// ✅ 개별 엔티티 수정 요청 타입들
 export interface UpdateMissionInstanceRequest {
   templateId: number;
   subTitle: string;
@@ -89,6 +109,15 @@ export interface UpdateMissionPeriodRequest {
 export interface UpdateMissionPointRequest {
   periodId: number;
   challengePoint: number;
+}
+
+// ✅ 유효성 검사 타입
+export interface ValidationErrors {
+  title?: boolean;
+  description?: boolean;
+  categoryId?: boolean;
+  type?: boolean;
+  name?: boolean;
 }
 
 // ✅ 조회 API
@@ -122,14 +151,14 @@ export const createMission = async (
   await axiosClient.post('/admin/missions', mission);
 };
 
-// 임시 생성 (간소화된 형태)
+// 간소화된 생성 API (신규 템플릿용)
 export const createMissionTemplate = async (
   req: Partial<Mission>
 ): Promise<void> => {
   await axiosClient.post('/admin/missions', req);
 };
 
-// ✅ 수정 API
+// ✅ 목록에서 간단한 필드 수정용 (title, type 등)
 export const updateMissionTemplate = async (
   templateId: number,
   updated: Partial<Mission>
@@ -137,6 +166,39 @@ export const updateMissionTemplate = async (
   await axiosClient.put(`/admin/missions/${templateId}`, updated);
 };
 
+// ✅ 상세 Drawer에서 전체 정보 포함 저장용
+export const updateMissionTemplateWithDetail = async (
+  templateId: number,
+  detail: MissionTemplateDetailResponse
+): Promise<void> => {
+  // MissionTemplateDetailResponse는 이미 flatten된 구조이므로
+  // 중첩된 detail 객체로 변환해서 전송
+  const requestData = {
+    categoryId: detail.categoryId,
+    title: detail.title,
+    description: detail.description,
+    type: detail.type,
+    thumbnailUrl: detail.thumbnailUrl,
+    detail: {
+      goodPoints: detail.detail.goodPoints || [],
+      howToProceed: detail.detail.howToProceed || [],
+      certification: {
+        description: detail.detail.certification?.description || '',
+        deadline: detail.detail.certification?.deadline || '',
+        examples: detail.detail.certification?.examples || [],
+      },
+      challengeInfo: {
+        availableCycles: detail.detail.challengeInfo?.availableCycles || [],
+        estimatedDuration: detail.detail.challengeInfo?.estimatedDuration || '',
+      },
+      relatedMissionIds: detail.detail.relatedMissionIds || [],
+    },
+  };
+
+  await axiosClient.put(`/admin/missions/${templateId}`, requestData);
+};
+
+// ✅ 미션 인스턴스 수정
 export const updateMissionInstance = async (
   instanceId: number,
   data: UpdateMissionInstanceRequest
@@ -144,6 +206,7 @@ export const updateMissionInstance = async (
   await axiosClient.put(`/admin/missions/instances/${instanceId}`, data);
 };
 
+// ✅ 주기 수정
 export const updateMissionPeriod = async (
   periodId: number,
   data: UpdateMissionPeriodRequest
@@ -151,6 +214,7 @@ export const updateMissionPeriod = async (
   await axiosClient.put(`/admin/missions/periods/${periodId}`, data);
 };
 
+// ✅ 도전금 수정
 export const updateMissionPoint = async (
   pointId: number,
   data: UpdateMissionPointRequest
@@ -158,7 +222,31 @@ export const updateMissionPoint = async (
   await axiosClient.put(`/admin/missions/points/${pointId}`, data);
 };
 
-// ✅ 상태 변경 API
+// ✅ 상세 정보 수정
+export const updateMissionDetail = async (
+  templateId: number,
+  missionData: {
+    templateId: number;
+    categoryId: number;
+    title: string;
+    description: string;
+    type: MissionType;
+    thumbnailUrl: string;
+    isActive: boolean;
+    detail: MissionDetail;
+  }
+): Promise<void> => {
+  try {
+    await axiosClient.put(`/admin/missions/${templateId}`, missionData);
+  } catch (error) {
+    if ((error as any).response) {
+      // 에러 응답 처리
+    }
+    throw error;
+  }
+};
+
+// ✅ 상태 활성/비활성 토글
 export const toggleMissionActive = async (
   templateId: number
 ): Promise<void> => {

@@ -1,21 +1,17 @@
-import {
-    Drawer,
-    Table,
-    Button,
-    Input,
-    Space,
-    notification
-} from 'antd';
+import { Drawer, message, Button, Space } from 'antd';
 import { useEffect, useState } from 'react';
-import { updateMissionPoint, updateMissionPeriod, updateMissionInstance, MissionTemplateDetailResponse } from '@/services/missionService';
-
-export interface MissionInstance {
-    instanceId: number;
-    subTitle: string;
-    subDescription: string;
-    orderInTemplate: number;
-    nextInstanceId: number | null;
-}
+import {
+    updateMissionTemplateWithDetail,
+    MissionTemplateDetailResponse,
+    MissionInstance,
+    MissionPeriod,
+    MissionPoint
+} from '@/services/missionService';
+import { updateArrayItem } from '@/utils/missionUtils';
+import MissionDetailSection from './components/MissionDetailSection';
+import MissionInstanceSection from './components/MissionInstanceSection';
+import MissionPeriodSection from './components/MissionPeriodSection';
+import MissionPointSection from './components/MissionPointSection';
 
 interface Props {
     open: boolean;
@@ -23,6 +19,16 @@ interface Props {
     templateId: number | null;
     loading: boolean;
     detail: MissionTemplateDetailResponse | null;
+    categories: { categoryId: number; name: string; description: string }[];
+    onSave: () => Promise<MissionTemplateDetailResponse>;
+}
+
+// 각 섹션별 편집 모드 타입
+interface EditModes {
+    detail: boolean;
+    instances: boolean;
+    periods: boolean;
+    points: boolean;
 }
 
 const MissionTemplateDetailDrawer = ({
@@ -31,50 +37,294 @@ const MissionTemplateDetailDrawer = ({
     templateId,
     loading,
     detail,
+    categories,
+    onSave,
 }: Props) => {
-    const [instances, setInstances] = useState<MissionInstance[]>([]);
-    const [periods, setPeriods] = useState<any[]>([]);
-    const [points, setPoints] = useState<any[]>([]);
+    // 각 섹션별 편집 모드 상태
+    const [editModes, setEditModes] = useState<EditModes>({
+        detail: false,
+        instances: false,
+        periods: false,
+        points: false,
+    });
 
-    const [editMode, setEditMode] = useState(false);
-    const [editPeriodMode, setEditPeriodMode] = useState(false);
-    const [editPointMode, setEditPointMode] = useState(false);
+    const [detailDraft, setDetailDraft] = useState<MissionTemplateDetailResponse | null>(null);
 
+    // 초기화 및 동기화
     useEffect(() => {
-        if (detail?.instances) setInstances(detail.instances);
-        if (detail?.periods) setPeriods(detail.periods);
-        if (detail?.points) setPoints(detail.points);
+        if (detail) {
+            setDetailDraft({
+                ...detail,
+                detail: {
+                    goodPoints: detail.detail.goodPoints || [],
+                    howToProceed: detail.detail.howToProceed || [],
+                    certification: {
+                        description: detail.detail.certification?.description || '',
+                        deadline: detail.detail.certification?.deadline || '',
+                        examples: detail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: detail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: detail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: detail.detail.relatedMissionIds || [],
+                },
+            });
+        }
     }, [detail]);
 
-    const handleInstanceChange = (
-        instanceId: number,
-        field: keyof MissionInstance,
-        value: any
-    ) => {
-        setInstances((prev) =>
-            prev.map((inst) =>
-                inst.instanceId === instanceId ? { ...inst, [field]: value } : inst
-            )
-        );
+    // 편집 모드 토글 함수
+    const toggleEditMode = (section: keyof EditModes) => {
+        setEditModes(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
     };
 
-    const handlePeriodChange = (periodId: number, field: string, value: any) => {
-        setPeriods((prev) =>
-            prev.map((p) =>
-                p.periodId === periodId ? { ...p, [field]: value } : p
-            )
-        );
+    // 편집 모드 취소 함수
+    const cancelEditMode = (section: keyof EditModes) => {
+        setEditModes(prev => ({
+            ...prev,
+            [section]: false
+        }));
+
+        // 원본 데이터로 복원
+        if (detail) {
+            setDetailDraft({
+                ...detail,
+                detail: {
+                    goodPoints: detail.detail.goodPoints || [],
+                    howToProceed: detail.detail.howToProceed || [],
+                    certification: {
+                        description: detail.detail.certification?.description || '',
+                        deadline: detail.detail.certification?.deadline || '',
+                        examples: detail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: detail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: detail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: detail.detail.relatedMissionIds || [],
+                },
+            });
+        }
     };
 
-    const handlePointChange = (pointId: number, field: string, value: any) => {
-        setPoints((prev) =>
-            prev.map((p) =>
-                p.pointId === pointId ? { ...p, [field]: value } : p
-            )
-        );
+    // 핸들러 함수들
+    const handleInstanceChange = (id: number, field: keyof MissionInstance, value: any) => {
+        if (!detailDraft) return;
+
+        setDetailDraft(prev => prev ? {
+            ...prev,
+            instances: updateArrayItem(prev.instances, 'instanceId', id, field, value)
+        } : null);
     };
 
-    if (!open) return null;
+    const handlePeriodChange = (id: number, field: keyof MissionPeriod, value: any) => {
+        if (!detailDraft) return;
+
+        setDetailDraft(prev => prev ? {
+            ...prev,
+            periods: updateArrayItem(prev.periods, 'periodId', id, field, value)
+        } : null);
+    };
+
+    const handlePointChange = (id: number, field: keyof MissionPoint, value: any) => {
+        if (!detailDraft) return;
+
+        setDetailDraft(prev => prev ? {
+            ...prev,
+            points: updateArrayItem(prev.points, 'pointId', id, field, value)
+        } : null);
+    };
+
+    const handleDetailDraftFieldChange = (field: keyof MissionTemplateDetailResponse, value: any) => {
+        if (!detailDraft) return;
+        setDetailDraft(prev => prev ? { ...prev, [field]: value } : null);
+    };
+
+    // 각 섹션별 저장 함수들
+    const handleDetailSave = async () => {
+        try {
+            if (!templateId || !detailDraft) {
+                message.error('저장할 데이터가 없습니다.');
+                return;
+            }
+
+            const requestData = {
+                templateId: detailDraft.templateId,
+                categoryId: detailDraft.categoryId,
+                title: detailDraft.title,
+                description: detailDraft.description,
+                type: detailDraft.type,
+                thumbnailUrl: detailDraft.thumbnailUrl,
+                isActive: detailDraft.isActive,
+                detail: detailDraft.detail,
+            };
+
+            await import('@/services/missionService').then(({ updateMissionDetail }) =>
+                updateMissionDetail(templateId, requestData)
+            );
+
+            message.success('상세 정보가 저장되었습니다.');
+            setEditModes(prev => ({ ...prev, detail: false }));
+
+            const updatedDetail = await onSave();
+            setDetailDraft({
+                ...updatedDetail,
+                detail: {
+                    goodPoints: updatedDetail.detail.goodPoints || [],
+                    howToProceed: updatedDetail.detail.howToProceed || [],
+                    certification: {
+                        description: updatedDetail.detail.certification?.description || '',
+                        deadline: updatedDetail.detail.certification?.deadline || '',
+                        examples: updatedDetail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: updatedDetail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: updatedDetail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: updatedDetail.detail.relatedMissionIds || [],
+                },
+            });
+        } catch (e) {
+            message.error(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
+        }
+    };
+
+    const handleInstancesSave = async () => {
+        try {
+            if (!templateId || !detailDraft) {
+                message.error('저장할 데이터가 없습니다.');
+                return;
+            }
+
+            // instances 저장
+            for (const instance of detailDraft.instances) {
+                await import('@/services/missionService').then(({ updateMissionInstance }) =>
+                    updateMissionInstance(instance.instanceId, {
+                        ...instance,
+                        templateId: templateId,
+                    })
+                );
+            }
+
+            message.success('미션 인스턴스가 저장되었습니다.');
+            setEditModes(prev => ({ ...prev, instances: false }));
+
+            const updatedDetail = await onSave();
+            setDetailDraft({
+                ...updatedDetail,
+                detail: {
+                    goodPoints: updatedDetail.detail.goodPoints || [],
+                    howToProceed: updatedDetail.detail.howToProceed || [],
+                    certification: {
+                        description: updatedDetail.detail.certification?.description || '',
+                        deadline: updatedDetail.detail.certification?.deadline || '',
+                        examples: updatedDetail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: updatedDetail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: updatedDetail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: updatedDetail.detail.relatedMissionIds || [],
+                },
+            });
+        } catch (e) {
+            console.error('인스턴스 저장 오류:', e);
+            message.error(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
+        }
+    };
+
+    const handlePeriodsSave = async () => {
+        try {
+            if (!templateId || !detailDraft) {
+                message.error('저장할 데이터가 없습니다.');
+                return;
+            }
+
+            // periods 저장
+            for (const period of detailDraft.periods) {
+                await import('@/services/missionService').then(({ updateMissionPeriod }) =>
+                    updateMissionPeriod(period.periodId, {
+                        ...period,
+                        templateId: templateId,
+                    })
+                );
+            }
+
+            message.success('미션 주기가 저장되었습니다.');
+            setEditModes(prev => ({ ...prev, periods: false }));
+
+            const updatedDetail = await onSave();
+            setDetailDraft({
+                ...updatedDetail,
+                detail: {
+                    goodPoints: updatedDetail.detail.goodPoints || [],
+                    howToProceed: updatedDetail.detail.howToProceed || [],
+                    certification: {
+                        description: updatedDetail.detail.certification?.description || '',
+                        deadline: updatedDetail.detail.certification?.deadline || '',
+                        examples: updatedDetail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: updatedDetail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: updatedDetail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: updatedDetail.detail.relatedMissionIds || [],
+                },
+            });
+        } catch (e) {
+            console.error('주기 저장 오류:', e);
+            message.error(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
+        }
+    };
+
+    const handlePointsSave = async () => {
+        try {
+            if (!detailDraft) {
+                message.error('저장할 데이터가 없습니다.');
+                return;
+            }
+
+            // points 저장
+            for (const point of detailDraft.points) {
+                await import('@/services/missionService').then(({ updateMissionPoint }) =>
+                    updateMissionPoint(point.pointId, {
+                        ...point,
+                        periodId: point.periodId,
+                    })
+                );
+            }
+
+            message.success('도전금 정보가 저장되었습니다.');
+            setEditModes(prev => ({ ...prev, points: false }));
+
+            const updatedDetail = await onSave();
+            setDetailDraft({
+                ...updatedDetail,
+                detail: {
+                    goodPoints: updatedDetail.detail.goodPoints || [],
+                    howToProceed: updatedDetail.detail.howToProceed || [],
+                    certification: {
+                        description: updatedDetail.detail.certification?.description || '',
+                        deadline: updatedDetail.detail.certification?.deadline || '',
+                        examples: updatedDetail.detail.certification?.examples || [],
+                    },
+                    challengeInfo: {
+                        availableCycles: updatedDetail.detail.challengeInfo?.availableCycles || [],
+                        estimatedDuration: updatedDetail.detail.challengeInfo?.estimatedDuration || '',
+                    },
+                    relatedMissionIds: updatedDetail.detail.relatedMissionIds || [],
+                },
+            });
+        } catch (e) {
+            console.error('포인트 저장 오류:', e);
+            message.error(e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.');
+        }
+    };
+
+    if (!open || !detail) return null;
 
     return (
         <Drawer
@@ -88,246 +338,50 @@ const MissionTemplateDetailDrawer = ({
                 <p>불러오는 중...</p>
             ) : (
                 <>
-                    {/* 인스턴스 목록 */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <h3>🧩 미션 인스턴스 목록</h3>
-                        {editMode ? (
-                            <Space>
-                                <Button onClick={() => setEditMode(false)}>❌ 취소</Button>
-                                <Button
-                                    type="primary"
-                                    onClick={async () => {
-                                        try {
-                                            for (const instance of instances) {
-                                                await updateMissionInstance(instance.instanceId, {
-                                                    templateId: templateId!,
-                                                    subTitle: instance.subTitle,
-                                                    subDescription: instance.subDescription,
-                                                    orderInTemplate: instance.orderInTemplate,
-                                                    nextInstanceId: instance.nextInstanceId,
-                                                });
-                                            }
-                                            notification.success({ message: '인스턴스가 저장되었습니다.' });
-                                            setEditMode(false);
-                                        } catch (e) {
-                                            notification.error({ message: '인스턴스 저장 실패' });
-                                        }
-                                    }}
-                                >
-                                    💾 저장
-                                </Button>
-                            </Space>
-                        ) : (
-                            <Button onClick={() => setEditMode(true)}>✏️ 수정</Button>
-                        )}
-                    </div>
-                    <Table
-                        dataSource={instances}
-                        rowKey="instanceId"
-                        pagination={false}
-                        columns={[
-                            { title: 'ID', dataIndex: 'instanceId' },
-                            {
-                                title: '제목',
-                                dataIndex: 'subTitle',
-                                render: (text, record) =>
-                                    editMode ? (
-                                        <Input
-                                            value={record.subTitle ?? ''}
-                                            onChange={(e) =>
-                                                handleInstanceChange(record.instanceId, 'subTitle', e.target.value)
-                                            }
-                                        />
-                                    ) : (
-                                        text
-                                    ),
-                            },
-                            {
-                                title: '설명',
-                                dataIndex: 'subDescription',
-                                render: (text, record) =>
-                                    editMode ? (
-                                        <Input
-                                            value={record.subDescription ?? ''}
-                                            onChange={(e) =>
-                                                handleInstanceChange(record.instanceId, 'subDescription', e.target.value)
-                                            }
-                                        />
-                                    ) : (
-                                        text
-                                    ),
-                            },
-                            {
-                                title: '순서',
-                                dataIndex: 'orderInTemplate',
-                                render: (text, record) =>
-                                    editMode ? (
-                                        <Input
-                                            type="number"
-                                            value={record.orderInTemplate}
-                                            onChange={(e) =>
-                                                handleInstanceChange(record.instanceId, 'orderInTemplate', Number(e.target.value))
-                                            }
-                                        />
-                                    ) : (
-                                        text
-                                    ),
-                            },
-                            {
-                                title: '다음 ID',
-                                dataIndex: 'nextInstanceId',
-                                render: (text, record) =>
-                                    editMode ? (
-                                        <Input
-                                            type="number"
-                                            value={record.nextInstanceId ?? ''}
-                                            onChange={(e) =>
-                                                handleInstanceChange(
-                                                    record.instanceId,
-                                                    'nextInstanceId',
-                                                    e.target.value ? Number(e.target.value) : null
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        text ?? '-'
-                                    ),
-                            },
-                        ]}
+                    <MissionDetailSection
+                        detail={detail}
+                        detailDraft={detailDraft}
+                        editMode={editModes.detail}
+                        onDetailDraftChange={setDetailDraft}
+                        categories={categories}
+                        onFieldChange={handleDetailDraftFieldChange}
+                        onEditToggle={() => toggleEditMode('detail')}
+                        onSave={handleDetailSave}
+                        onCancel={() => cancelEditMode('detail')}
                     />
 
-                    {/* 주기 목록 */}
-                    <div style={{ marginTop: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <h3>📅 미션 주기 목록</h3>
-                            {editPeriodMode ? (
-                                <Space>
-                                    <Button onClick={() => setEditPeriodMode(false)}>❌ 취소</Button>
-                                    <Button
-                                        type="primary"
-                                        onClick={async () => {
-                                            try {
-                                                for (const period of periods) {
-                                                    await updateMissionPeriod(period.periodId, {
-                                                        templateId: templateId!,
-                                                        cycleId: period.cycleId,
-                                                    });
-                                                }
-                                                notification.success({ message: '주기 정보가 저장되었습니다.' });
-                                                setEditPeriodMode(false);
-                                            } catch (e) {
-                                                notification.error({ message: '주기 저장 중 오류 발생' });
-                                            }
-                                        }}
-                                    >
-                                        💾 저장
-                                    </Button>
-                                </Space>
-                            ) : (
-                                <Button onClick={() => setEditPeriodMode(true)}>✏️ 수정</Button>
-                            )}
-                        </div>
+                    <MissionInstanceSection
+                        instances={detailDraft?.instances || []}
+                        editMode={editModes.instances}
+                        templateId={templateId}
+                        onInstanceChange={handleInstanceChange}
+                        onEditToggle={() => toggleEditMode('instances')}
+                        onSave={handleInstancesSave}
+                        onCancel={() => cancelEditMode('instances')}
+                    />
 
-                        <Table
-                            dataSource={periods}
-                            rowKey="periodId"
-                            pagination={false}
-                            columns={[
-                                { title: 'ID', dataIndex: 'periodId' },
-                                {
-                                    title: '주기 ID',
-                                    dataIndex: 'cycleId',
-                                    render: (text, record) =>
-                                        editPeriodMode ? (
-                                            <Input
-                                                value={record.cycleId}
-                                                onChange={(e) =>
-                                                    handlePeriodChange(record.periodId, 'cycleId', Number(e.target.value))
-                                                }
-                                            />
-                                        ) : (
-                                            text
-                                        ),
-                                },
-                            ]}
-                        />
-                    </div>
+                    <MissionPeriodSection
+                        periods={detailDraft?.periods || []}
+                        editMode={editModes.periods}
+                        templateId={templateId}
+                        onPeriodChange={handlePeriodChange}
+                        onEditToggle={() => toggleEditMode('periods')}
+                        onSave={handlePeriodsSave}
+                        onCancel={() => cancelEditMode('periods')}
+                    />
 
-                    {/* 도전금 목록 */}
-                    <div style={{ marginTop: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <h3>💰 도전금 목록</h3>
-                            {editPointMode ? (
-                                <Space>
-                                    <Button onClick={() => setEditPointMode(false)}>❌ 취소</Button>
-                                    <Button
-                                        type="primary"
-                                        onClick={async () => {
-                                            try {
-                                                for (const point of points) {
-                                                    await updateMissionPoint(point.pointId, {
-                                                        periodId: point.periodId,
-                                                        challengePoint: point.challengePoint,
-                                                    });
-                                                }
-                                                notification.success({ message: '도전금 정보가 저장되었습니다.' });
-                                                setEditPointMode(false);
-                                            } catch (e) {
-                                                notification.error({ message: '도전금 저장 실패' });
-                                            }
-                                        }}
-                                    >
-                                        💾 저장
-                                    </Button>
-                                </Space>
-                            ) : (
-                                <Button onClick={() => setEditPointMode(true)}>✏️ 수정</Button>
-                            )}
-                        </div>
-
-                        <Table
-                            dataSource={points}
-                            rowKey="pointId"
-                            pagination={false}
-                            columns={[
-                                { title: 'ID', dataIndex: 'pointId' },
-                                {
-                                    title: '연결된 주기 ID',
-                                    dataIndex: 'periodId',
-                                    render: (text, record) =>
-                                        editPointMode ? (
-                                            <Input
-                                                value={record.periodId}
-                                                onChange={(e) =>
-                                                    handlePointChange(record.pointId, 'periodId', Number(e.target.value))
-                                                }
-                                            />
-                                        ) : (
-                                            text
-                                        ),
-                                },
-                                {
-                                    title: '도전금',
-                                    dataIndex: 'challengePoint',
-                                    render: (text, record) =>
-                                        editPointMode ? (
-                                            <Input
-                                                value={record.challengePoint}
-                                                onChange={(e) =>
-                                                    handlePointChange(record.pointId, 'challengePoint', Number(e.target.value))
-                                                }
-                                            />
-                                        ) : (
-                                            text
-                                        ),
-                                },
-                            ]}
-                        />
-                    </div>
+                    <MissionPointSection
+                        points={detailDraft?.points || []}
+                        editMode={editModes.points}
+                        onPointChange={handlePointChange}
+                        onEditToggle={() => toggleEditMode('points')}
+                        onSave={handlePointsSave}
+                        onCancel={() => cancelEditMode('points')}
+                    />
                 </>
             )}
         </Drawer>
     );
 };
 
-export default MissionTemplateDetailDrawer;
+export default MissionTemplateDetailDrawer; 

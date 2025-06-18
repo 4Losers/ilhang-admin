@@ -7,6 +7,7 @@ import {
     updateCategory,
     MissionCategoryResponse,
 } from '@/services/categoryService';
+import { validateCategory, hasValidationErrors } from '@/utils/missionUtils';
 
 interface MissionCategoryWithEdit extends MissionCategoryResponse {
     isEditing?: boolean;
@@ -40,16 +41,10 @@ const MissionCategoryTab = ({ onCategoryChange }: Props) => {
     };
 
     const handleCreate = async () => {
-        const name = newCategory.name.trim();
-        const description = newCategory.description.trim();
-
-        const errors = {
-            name: !name,
-            description: !description,
-        };
+        const errors = validateCategory(newCategory);
         setValidationError(errors);
 
-        if (errors.name || errors.description) {
+        if (hasValidationErrors(errors)) {
             notification.warning({
                 message: '입력값 확인',
                 description: '이름과 설명을 모두 입력해주세요.',
@@ -58,10 +53,10 @@ const MissionCategoryTab = ({ onCategoryChange }: Props) => {
         }
 
         try {
-            await createCategory({ name, description });
+            await createCategory(newCategory);
             notification.success({
                 message: '카테고리 생성 완료',
-                description: `'${name}' 카테고리가 성공적으로 추가되었습니다.`,
+                description: `'${newCategory.name}' 카테고리가 성공적으로 추가되었습니다.`,
             });
             await onCategoryChange();
             setIsCreating(false);
@@ -78,10 +73,9 @@ const MissionCategoryTab = ({ onCategoryChange }: Props) => {
     };
 
     const handleUpdate = async (record: MissionCategoryWithEdit) => {
-        const name = record.name.trim();
-        const description = record.description.trim();
+        const errors = validateCategory(record);
 
-        if (!name || !description) {
+        if (hasValidationErrors(errors)) {
             notification.warning({
                 message: '입력값 확인',
                 description: '이름과 설명을 모두 입력해주세요.',
@@ -90,10 +84,10 @@ const MissionCategoryTab = ({ onCategoryChange }: Props) => {
         }
 
         try {
-            await updateCategory(record.categoryId, { name, description });
+            await updateCategory(record.categoryId, record);
             notification.success({
                 message: '카테고리 수정 완료',
-                description: `'${name}' 카테고리가 성공적으로 수정되었습니다.`,
+                description: `'${record.name}' 카테고리가 성공적으로 수정되었습니다.`,
             });
             load();
         } catch (e) {
