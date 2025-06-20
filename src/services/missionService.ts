@@ -111,6 +111,47 @@ export interface UpdateMissionPointRequest {
   challengePoint: number;
 }
 
+// ✅ 개별 엔티티 생성 요청 타입들
+export interface CreateMissionInstanceRequest {
+  templateId: number;
+  subTitle: string;
+  subDescription: string;
+  orderInTemplate: number;
+  nextInstanceId: number | null;
+}
+
+export interface CreateMissionPeriodRequest {
+  templateId: number;
+  cycleId: number;
+}
+
+export interface CreateMissionPointRequest {
+  periodId: number;
+  challengePoint: number;
+}
+
+// ✅ 생성 응답 타입들
+export interface CreateMissionInstanceResponse {
+  instanceId: number;
+  templateId: number;
+  subTitle: string;
+  subDescription: string;
+  orderInTemplate: number;
+  nextInstanceId: number | null;
+}
+
+export interface CreateMissionPeriodResponse {
+  periodId: number;
+  templateId: number;
+  cycleId: number;
+}
+
+export interface CreateMissionPointResponse {
+  pointId: number;
+  periodId: number;
+  challengePoint: number;
+}
+
 // ✅ 유효성 검사 타입
 export interface ValidationErrors {
   title?: boolean;
@@ -220,6 +261,56 @@ export const updateMissionPoint = async (
   data: UpdateMissionPointRequest
 ): Promise<void> => {
   await axiosClient.put(`/admin/missions/points/${pointId}`, data);
+};
+
+// ✅ 미션 인스턴스 생성
+export const createMissionInstance = async (
+  data: CreateMissionInstanceRequest
+): Promise<CreateMissionInstanceResponse> => {
+  const response = await axiosClient.post<CreateMissionInstanceResponse>(
+    '/admin/missions/instances',
+    data
+  );
+  return response.data;
+};
+
+// ✅ 주기 생성
+export const createMissionPeriod = async (
+  data: CreateMissionPeriodRequest
+): Promise<CreateMissionPeriodResponse> => {
+  const response = await axiosClient.post<CreateMissionPeriodResponse>(
+    '/admin/missions/periods',
+    data
+  );
+  return response.data;
+};
+
+// ✅ 도전금 생성
+export const createMissionPoint = async (
+  data: CreateMissionPointRequest
+): Promise<CreateMissionPointResponse> => {
+  const response = await axiosClient.post<CreateMissionPointResponse>(
+    '/admin/missions/points',
+    data
+  );
+  return response.data;
+};
+
+// ✅ 이미지 업로드
+export const uploadImage = async (file: File): Promise<{ imageUrl: string }> => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await axiosClient.post<{ imageUrl: string }>(
+    '/admin/upload',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
 };
 
 // ✅ 상세 정보 수정

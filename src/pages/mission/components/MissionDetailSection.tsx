@@ -79,6 +79,21 @@ const MissionDetailSection = ({
         });
     };
 
+    const handleExamplesChange = (examples: any[]) => {
+        if (!detailDraft) return;
+
+        onDetailDraftChange({
+            ...detailDraft,
+            detail: {
+                ...detailDraft.detail,
+                certification: {
+                    ...detailDraft.detail.certification,
+                    examples: examples,
+                },
+            },
+        });
+    };
+
     const handleChallengeInfoChange = (field: 'availableCycles' | 'estimatedDuration', value: any) => {
         if (!detailDraft) return;
 
@@ -145,6 +160,7 @@ const MissionDetailSection = ({
                 detailDraft={detailDraft}
                 editMode={editMode}
                 onCertificationChange={handleCertificationChange}
+                onExamplesChange={handleExamplesChange}
             />
 
             {/* 📅 도전 정보 */}

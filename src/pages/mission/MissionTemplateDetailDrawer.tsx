@@ -33,6 +33,12 @@ const MissionTemplateDetailDrawer = ({
         handlePointChange,
         handleDetailDraftFieldChange,
         resetDetailDraft,
+        addInstance,
+        addPeriod,
+        addPoint,
+        removeInstance,
+        removePeriod,
+        removePoint,
     } = useMissionTemplateDetail({ detail });
 
     const {
@@ -88,6 +94,8 @@ const MissionTemplateDetailDrawer = ({
                         onEditToggle={() => toggleEditMode('instances')}
                         onSave={handleInstancesSave}
                         onCancel={() => handleCancelEditMode('instances')}
+                        onAdd={addInstance}
+                        onRemove={removeInstance}
                     />
 
                     <MissionPeriodSection
@@ -98,6 +106,8 @@ const MissionTemplateDetailDrawer = ({
                         onEditToggle={() => toggleEditMode('periods')}
                         onSave={handlePeriodsSave}
                         onCancel={() => handleCancelEditMode('periods')}
+                        onAdd={addPeriod}
+                        onRemove={removePeriod}
                     />
 
                     <MissionPointSection
@@ -107,6 +117,8 @@ const MissionTemplateDetailDrawer = ({
                         onEditToggle={() => toggleEditMode('points')}
                         onSave={handlePointsSave}
                         onCancel={() => handleCancelEditMode('points')}
+                        onAdd={addPoint}
+                        onRemove={removePoint}
                     />
                 </>
             )}

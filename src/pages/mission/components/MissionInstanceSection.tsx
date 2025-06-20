@@ -9,6 +9,8 @@ interface Props {
     onEditToggle: () => void;
     onSave: () => Promise<void>;
     onCancel: () => void;
+    onAdd?: () => void;
+    onRemove?: (instanceId: number) => void;
 }
 
 const MissionInstanceSection = ({
@@ -19,19 +21,26 @@ const MissionInstanceSection = ({
     onEditToggle,
     onSave,
     onCancel,
+    onAdd,
+    onRemove,
 }: Props) => {
     return (
         <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h3>🧩 미션 인스턴스 목록</h3>
-                {editMode ? (
-                    <Space>
-                        <Button onClick={onCancel}>❌ 취소</Button>
-                        <Button type="primary" onClick={onSave}>💾 저장</Button>
-                    </Space>
-                ) : (
-                    <Button type="primary" onClick={onEditToggle}>✏️ 수정</Button>
-                )}
+                <Space>
+                    {editMode && onAdd && (
+                        <Button type="dashed" onClick={onAdd}>➕ 추가</Button>
+                    )}
+                    {editMode ? (
+                        <>
+                            <Button onClick={onCancel}>❌ 취소</Button>
+                            <Button type="primary" onClick={onSave}>💾 저장</Button>
+                        </>
+                    ) : (
+                        <Button type="primary" onClick={onEditToggle}>✏️ 수정</Button>
+                    )}
+                </Space>
             </div>
             <Table
                 dataSource={instances}
@@ -105,6 +114,20 @@ const MissionInstanceSection = ({
                                 text ?? '-'
                             ),
                     },
+                    ...(editMode && onRemove ? [{
+                        title: '삭제',
+                        key: 'action',
+                        render: (_: any, record: MissionInstance) => (
+                            <Button
+                                type="text"
+                                danger
+                                size="small"
+                                onClick={() => onRemove(record.instanceId)}
+                            >
+                                🗑️
+                            </Button>
+                        ),
+                    }] : []),
                 ]}
             />
         </div>

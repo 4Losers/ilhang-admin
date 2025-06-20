@@ -52,6 +52,7 @@ export const useMissionSave = ({
                 isActive: detailDraft.isActive,
                 detail: detailDraft.detail,
             };
+            console.log('🔍 requestData', requestData);
 
             await import('@/services/missionService').then(({ updateMissionDetail }) =>
                 updateMissionDetail(templateId, requestData)
@@ -71,14 +72,28 @@ export const useMissionSave = ({
                 return;
             }
 
-            // instances 저장
+            // instances 저장 (기존 항목 수정 + 새로 추가된 항목 생성)
             for (const instance of detailDraft.instances) {
-                await import('@/services/missionService').then(({ updateMissionInstance }) =>
-                    updateMissionInstance(instance.instanceId, {
-                        ...instance,
-                        templateId: templateId,
-                    })
-                );
+                if (instance.instanceId < 0) {
+                    // 새로 추가된 항목 (임시 ID가 음수)
+                    await import('@/services/missionService').then(({ createMissionInstance }) =>
+                        createMissionInstance({
+                            templateId: templateId,
+                            subTitle: instance.subTitle,
+                            subDescription: instance.subDescription,
+                            orderInTemplate: instance.orderInTemplate,
+                            nextInstanceId: instance.nextInstanceId,
+                        })
+                    );
+                } else {
+                    // 기존 항목 수정
+                    await import('@/services/missionService').then(({ updateMissionInstance }) =>
+                        updateMissionInstance(instance.instanceId, {
+                            ...instance,
+                            templateId: templateId,
+                        })
+                    );
+                }
             }
 
             await handleSaveSuccess('instances', '미션 인스턴스가 저장되었습니다.');
@@ -95,14 +110,25 @@ export const useMissionSave = ({
                 return;
             }
 
-            // periods 저장
+            // periods 저장 (기존 항목 수정 + 새로 추가된 항목 생성)
             for (const period of detailDraft.periods) {
-                await import('@/services/missionService').then(({ updateMissionPeriod }) =>
-                    updateMissionPeriod(period.periodId, {
-                        ...period,
-                        templateId: templateId,
-                    })
-                );
+                if (period.periodId < 0) {
+                    // 새로 추가된 항목 (임시 ID가 음수)
+                    await import('@/services/missionService').then(({ createMissionPeriod }) =>
+                        createMissionPeriod({
+                            templateId: templateId,
+                            cycleId: period.cycleId,
+                        })
+                    );
+                } else {
+                    // 기존 항목 수정
+                    await import('@/services/missionService').then(({ updateMissionPeriod }) =>
+                        updateMissionPeriod(period.periodId, {
+                            ...period,
+                            templateId: templateId,
+                        })
+                    );
+                }
             }
 
             await handleSaveSuccess('periods', '미션 주기가 저장되었습니다.');
@@ -119,14 +145,25 @@ export const useMissionSave = ({
                 return;
             }
 
-            // points 저장
+            // points 저장 (기존 항목 수정 + 새로 추가된 항목 생성)
             for (const point of detailDraft.points) {
-                await import('@/services/missionService').then(({ updateMissionPoint }) =>
-                    updateMissionPoint(point.pointId, {
-                        ...point,
-                        periodId: point.periodId,
-                    })
-                );
+                if (point.pointId < 0) {
+                    // 새로 추가된 항목 (임시 ID가 음수)
+                    await import('@/services/missionService').then(({ createMissionPoint }) =>
+                        createMissionPoint({
+                            periodId: point.periodId,
+                            challengePoint: point.challengePoint,
+                        })
+                    );
+                } else {
+                    // 기존 항목 수정
+                    await import('@/services/missionService').then(({ updateMissionPoint }) =>
+                        updateMissionPoint(point.pointId, {
+                            ...point,
+                            periodId: point.periodId,
+                        })
+                    );
+                }
             }
 
             await handleSaveSuccess('points', '도전금 정보가 저장되었습니다.');

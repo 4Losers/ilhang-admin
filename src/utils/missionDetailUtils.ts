@@ -32,4 +32,25 @@ export const initializeDetailDraft = (detail: MissionTemplateDetailResponse): Mi
  */
 export const updateDetailDraftAfterSave = (updatedDetail: MissionTemplateDetailResponse): MissionTemplateDetailResponse => {
     return initializeDetailDraft(updatedDetail);
+};
+
+/**
+ * 배열에서 특정 ID를 가진 항목의 특정 필드를 업데이트하는 함수
+ * @param array 업데이트할 배열
+ * @param idField ID 필드명
+ * @param id 찾을 ID 값
+ * @param field 업데이트할 필드명
+ * @param value 새로운 값
+ * @returns 업데이트된 배열
+ */
+export const updateArrayItem = <T extends Record<string, any>>(
+    array: T[],
+    idField: keyof T,
+    id: any,
+    field: keyof T,
+    value: any
+): T[] => {
+    return array.map(item =>
+        item[idField] === id ? { ...item, [field]: value } : item
+    );
 }; 
