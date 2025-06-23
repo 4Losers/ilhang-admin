@@ -1,4 +1,4 @@
-import { ValidationErrors } from '@/services/missionService';
+// missionUtils.ts - 미션 관련 유틸리티 함수들
 
 // ✅ 유효성 검사 유틸리티
 export const validateMissionTemplate = (data: {

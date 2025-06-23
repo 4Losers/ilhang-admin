@@ -87,9 +87,8 @@ const MissionTemplateDetailDrawer = ({
                     />
 
                     <MissionInstanceSection
-                        instances={detailDraft?.instances || []}
+                        instances={detail?.instances || []}
                         editMode={editModes.instances}
-                        templateId={templateId}
                         onInstanceChange={handleInstanceChange}
                         onEditToggle={() => toggleEditMode('instances')}
                         onSave={handleInstancesSave}
@@ -99,9 +98,8 @@ const MissionTemplateDetailDrawer = ({
                     />
 
                     <MissionPeriodSection
-                        periods={detailDraft?.periods || []}
+                        periods={detail?.periods || []}
                         editMode={editModes.periods}
-                        templateId={templateId}
                         onPeriodChange={handlePeriodChange}
                         onEditToggle={() => toggleEditMode('periods')}
                         onSave={handlePeriodsSave}

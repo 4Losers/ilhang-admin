@@ -1,10 +1,9 @@
 import { Table, Input, Button, Space } from 'antd';
 import { MissionInstance } from '@/services/missionService';
 
-interface Props {
+interface MissionInstanceSectionProps {
     instances: MissionInstance[];
     editMode: boolean;
-    templateId: number | null;
     onInstanceChange: (id: number, field: keyof MissionInstance, value: any) => void;
     onEditToggle: () => void;
     onSave: () => Promise<void>;
@@ -16,14 +15,13 @@ interface Props {
 const MissionInstanceSection = ({
     instances,
     editMode,
-    templateId,
     onInstanceChange,
     onEditToggle,
     onSave,
     onCancel,
     onAdd,
     onRemove,
-}: Props) => {
+}: MissionInstanceSectionProps) => {
     return (
         <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

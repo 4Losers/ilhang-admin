@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { convertToCamelCase } from '../utils/caseConverter';
 
 // Axios 인스턴스 생성
 const axiosClient = axios.create({
@@ -59,7 +60,12 @@ axiosClient.interceptors.request.use(
 
 // 응답 인터셉터 - 에러 처리 및 토큰 갱신
 axiosClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) {
+      response.data = convertToCamelCase(response.data);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

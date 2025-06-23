@@ -1,8 +1,8 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AppLayout from './components/Layout/AppLayout';
-import DashboardPage from './pages/DashboardPage';
-import UserPage from './pages/UserPage';
+import DashboardPage from './pages/DashboardPage/index';
+import UserPage from './pages/UserPage/index';
 import MissionPage from './pages/mission/MissionPage';
 import MatchingPage from './pages/MatchingPage';
 import CertificationPage from './pages/CertificationPage';

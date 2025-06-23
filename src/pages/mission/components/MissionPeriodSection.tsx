@@ -1,10 +1,9 @@
 import { Table, Input, Button, Space } from 'antd';
 import { MissionPeriod } from '@/services/missionService';
 
-interface Props {
+interface MissionPeriodSectionProps {
     periods: MissionPeriod[];
     editMode: boolean;
-    templateId: number | null;
     onPeriodChange: (id: number, field: keyof MissionPeriod, value: any) => void;
     onEditToggle: () => void;
     onSave: () => Promise<void>;
@@ -16,14 +15,13 @@ interface Props {
 const MissionPeriodSection = ({
     periods,
     editMode,
-    templateId,
     onPeriodChange,
     onEditToggle,
     onSave,
     onCancel,
     onAdd,
     onRemove,
-}: Props) => {
+}: MissionPeriodSectionProps) => {
     return (
         <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

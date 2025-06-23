@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table';
-import { Button, Switch } from 'antd';
+import { Switch } from 'antd';
 import MissionTemplateFormRow from './MissionTemplateFormRow';
 import { MissionCategoryResponse } from '@/services/categoryService';
 import { MissionTemplateView } from '@/services/missionService';
